@@ -101,7 +101,7 @@ if(!loginInput.includes("@")){
   if(error){
     document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos"; //caso o usuário insira dados não cadastrados essa mensagem irá aparecer
   }else{
-    window.location.href = "index.html"; 
+    window.location.href = "presenca.html"; 
   }
 }
 
