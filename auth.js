@@ -56,7 +56,7 @@ async function cadastrar(){
 
     //tempo de espera após criar a conta
     setTimeout(() => {
-      window.location.href = "login.html";
+      window.location.href = "index.html";
     }, 2000);
 }
 
