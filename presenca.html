@@ -2,15 +2,25 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<title>Área do Aluno</title>
+<title>Registrar Presença</title>
 <link rel="stylesheet" href="estilo.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 
 <div class="card">
-  <h2>Você está logado 🎉</h2>
-  <p id="emailUsuario">Carregando dados...</p>
+  <h2>Controle de Presença</h2>
 
+  <button onclick="marcarPresenca()">Marcar presença de hoje</button>
+
+  <p id="msg"></p>
+
+  <hr>
+
+  <h3>Meu histórico</h3>
+  <div id="lista">Carregando...</div>
+
+  <br>
   <button onclick="logout()">Sair</button>
 </div>
 
@@ -18,18 +28,16 @@
 <script src="auth.js"></script>
 
 <script>
+// 🔐 proteger página
 async function protegerPagina(){
   const { data } = await supabaseClient.auth.getSession();
 
-  // se não tiver sessão → volta pro login
   if(!data.session){
     window.location.href = "login.html";
     return;
   }
 
-  // mostra email do usuário logado
-  document.getElementById("emailUsuario").innerText =
-    "Logado como: " + data.session.user.email;
+  carregarHistorico();
 }
 
 protegerPagina();

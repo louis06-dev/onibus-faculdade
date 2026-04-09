@@ -3,12 +3,17 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+//quando o usuario digitar (xx) xxx-xxx o que será salvo no banco de dados serão somente os numeros
+function limparTelefone(numero){
+  return numero.replace(/\D/g, "");
+}
+
 
 // ================= CADASTRO =================
 async function cadastrar(){
 
   const email = document.getElementById("email").value;
-  const telefone = document.getElementById("telefone").value;
+  const telefone = limparTelefone(document.getElementById("telefone").value); 
   const cpf = document.getElementById("cpf").value;
   const instituicao = document.getElementById("instituicao").value;
   const senha = document.getElementById("senha").value;
@@ -34,7 +39,7 @@ async function cadastrar(){
 
   if(error){
     document.getElementById("msg").innerText = error.message;
-    return;
+    return; 
   }
 
   // ⚠️ esperar sessão ficar ativa
@@ -56,34 +61,29 @@ async function cadastrar(){
 
     //tempo de espera após criar a conta
     setTimeout(() => {
-      window.location.href = "index.html";
+      window.location.href = "login.html";
     }, 2000);
 }
 
 // ================= LOGIN =================
 async function login(){
 
-  const loginInput = document.getElementById("login").value.trim();
+  let loginInput = document.getElementById("login").value.trim();
+  const telefoneDigitado = limparTelefone(loginInput);
   const senha = document.getElementById("senha").value.trim();
 
   let emailParaLogin = loginInput;
 
   // se não digitou nada
-if(!loginInput){
-  document.getElementById("msg").innerText = "Digite email ou telefone";
-  return;
-}
-
 if(!loginInput.includes("@")){
 
   const { data, error } = await supabaseClient
     .from("usuarios")
     .select("email")
-    .eq("telefone", loginInput)
-    .single();
+    .eq("telefone", telefoneDigitado)
+    .maybeSingle();
 
-  // erro de consulta ou telefone não existe
-  if(error || !data){
+  if(!data){
     document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos";
     return;
   }
@@ -97,7 +97,7 @@ if(!loginInput.includes("@")){
   });
 
   //se o usuário inserir dados não cadastrados essa mensagem irá aparecer;
-  //caso contrário, ele entra no sistema (index.html);
+  //caso contrário, ele entra no sistema (presenca.html);
   if(error){
     document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos"; //caso o usuário insira dados não cadastrados essa mensagem irá aparecer
   }else{
@@ -109,7 +109,7 @@ if(!loginInput.includes("@")){
 // ================= LOGOUT =================
 async function logout(){
   await supabaseClient.auth.signOut();
-  window.location.href = "index.html";
+  window.location.href = "login.html";
 }
 
 
@@ -117,3 +117,78 @@ async function logout(){
 window.login = login;
 window.cadastrar = cadastrar;
 window.logout = logout;
+
+// ================= MARCAR PRESENÇA =================
+async function marcarPresenca(){
+
+  const { data } = await supabaseClient.auth.getSession();
+
+  if(!data.session){
+    window.location.href = "login.html";
+    return;
+  }
+
+  const userId = data.session.user.id;
+
+  const hoje = new Date();
+  const dataHoje = hoje.toISOString().split("T")[0];
+  const horaAgora = hoje.toTimeString().split(" ")[0];
+
+  // verificar se já marcou hoje
+  const { data: jaExiste } = await supabaseClient
+    .from("presencas")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("data", dataHoje)
+    .single();
+
+  if(jaExiste){
+    document.getElementById("msg").innerText = "Você já marcou presença hoje ✔️";
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("presencas")
+    .insert({
+      user_id: userId,
+      data: dataHoje,
+      hora: horaAgora
+    });
+
+  document.getElementById("msg").innerText =
+    error ? error.message : "Presença registrada com sucesso 🎉";
+}
+
+
+// ================= HISTÓRICO =================
+async function carregarHistorico(){
+
+  const { data } = await supabaseClient.auth.getSession();
+
+  if(!data.session){
+    window.location.href = "login.html";
+    return;
+  }
+
+  const userId = data.session.user.id;
+
+  const { data: presencas } = await supabaseClient
+    .from("presencas")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending:false });
+
+  const lista = document.getElementById("lista");
+
+  if(!presencas || presencas.length === 0){
+    lista.innerHTML = "<p>Nenhuma presença registrada.</p>";
+    return;
+  }
+
+  lista.innerHTML = presencas.map(p =>
+    `<p>📅 ${p.data} — ⏰ ${p.hora}</p>`
+  ).join("");
+}
+
+window.marcarPresenca = marcarPresenca;
+window.carregarHistorico = carregarHistorico;

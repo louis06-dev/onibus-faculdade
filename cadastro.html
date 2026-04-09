@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>Cadastro</title>
 <link rel="stylesheet" href="estilo.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 
@@ -18,13 +19,14 @@
   <input id="confirmarSenha" type="password" placeholder="Confirme a senha" required>
 
   <button onclick="cadastrar()">Cadastrar</button>
-  <div>
-  <button onclick="login()">Entrar</button>
 
-</div>
+  <p>Já tem conta? <a href="login.html">Entrar</a></p>
+  <p id="msg"></p>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="auth.js"></script>
 </body>
 </html>
+
+//DEMONSTRATIVO
