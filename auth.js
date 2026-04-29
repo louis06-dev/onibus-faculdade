@@ -98,11 +98,26 @@ if(!loginInput.includes("@")){
 
   //se o usuário inserir dados não cadastrados essa mensagem irá aparecer;
   //caso contrário, ele entra no sistema (presenca.html);
-  if(error){
+  /*if(error){
     document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos"; //caso o usuário insira dados não cadastrados essa mensagem irá aparecer
   }else{
     window.location.href = "presenca.html"; 
-  }
+  }*/
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+const userId = sessionData.session.user.id;
+
+const { data: usuario } = await supabaseClient
+  .from("usuarios")
+  .select("tipo")
+  .eq("id", userId)
+  .single();
+
+if(usuario.tipo === "admin"){
+  window.location.href = "admin.html";
+}else{
+  window.location.href = "presenca.html";
+}
 }
 
 
@@ -130,33 +145,26 @@ async function marcarPresenca(){
 
   const userId = data.session.user.id;
 
-  const hoje = new Date();
-  const dataHoje = hoje.toISOString().split("T")[0];
-  const horaAgora = hoje.toTimeString().split(" ")[0];
-
-  // verificar se já marcou hoje
-  const { data: jaExiste } = await supabaseClient
-    .from("presencas")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("data", dataHoje)
-    .single();
-
-  if(jaExiste){
-    document.getElementById("msg").innerText = "Você já marcou presença hoje ✔️";
-    return;
-  }
-
+  // tenta inserir direto (o banco impede duplicado)
   const { error } = await supabaseClient
     .from("presencas")
     .insert({
-      user_id: userId,
-      data: dataHoje,
-      hora: horaAgora
+      user_id: userId
     });
 
-  document.getElementById("msg").innerText =
-    error ? error.message : "Presença registrada com sucesso 🎉";
+  const msg = document.getElementById("msg");
+
+  if(error){
+    if(error.message.includes("duplicate key")){
+      msg.innerText = "Você já marcou presença hoje ✔️";
+    } else {
+      msg.innerText = "Erro ao marcar presença";
+      console.log(error);
+    }
+    return;
+  }
+
+  msg.innerText = "Presença registrada com sucesso 🎉";
 }
 
 
@@ -172,13 +180,19 @@ async function carregarHistorico(){
 
   const userId = data.session.user.id;
 
-  const { data: presencas } = await supabaseClient
+  const { data: presencas, error } = await supabaseClient
     .from("presencas")
-    .select("*")
+    .select("data_presenca")
     .eq("user_id", userId)
-    .order("created_at", { ascending:false });
+    .order("data_presenca", { ascending:false });
 
   const lista = document.getElementById("lista");
+
+  if(error){
+    lista.innerHTML = "Erro ao carregar histórico";
+    console.log(error);
+    return;
+  }
 
   if(!presencas || presencas.length === 0){
     lista.innerHTML = "<p>Nenhuma presença registrada.</p>";
@@ -186,9 +200,73 @@ async function carregarHistorico(){
   }
 
   lista.innerHTML = presencas.map(p =>
-    `<p>📅 ${p.data} — ⏰ ${p.hora}</p>`
+    `<p>📅 ${p.data_presenca}</p>`
   ).join("");
 }
 
-window.marcarPresenca = marcarPresenca;
-window.carregarHistorico = carregarHistorico;
+async function carregarPresencasAdmin(){
+
+  const { data: sessionData } = await supabaseClient.auth.getSession();
+
+  if(!sessionData.session){
+    window.location.href = "login.html";
+    return;
+  }
+
+  const lista = document.getElementById("lista");
+  lista.innerHTML = "Carregando...";
+
+  // 1️⃣ Buscar presenças
+  const { data: presencas, error: erroPresencas } =
+    await supabaseClient
+      .from("presencas")
+      .select("*")
+      .order("data_presenca", { ascending:false });
+
+  if(erroPresencas){
+    lista.innerHTML = erroPresencas.message;
+    console.log(erroPresencas);
+    return;
+  }
+
+  if(!presencas || presencas.length === 0){
+    lista.innerHTML = "Nenhuma presença encontrada.";
+    return;
+  }
+
+  // 2️⃣ Buscar usuários
+  const { data: usuarios, error: erroUsuarios } =
+    await supabaseClient
+      .from("usuarios")
+      .select("id, email, telefone, instituicao");
+
+  if(erroUsuarios){
+    lista.innerHTML = erroUsuarios.message;
+    console.log(erroUsuarios);
+    return;
+  }
+
+  // 3️⃣ Cruzar manualmente
+  lista.innerHTML = "";
+
+  presencas.forEach(p => {
+
+    const usuario = usuarios.find(u => u.id === p.user_id);
+
+    const div = document.createElement("div");
+    div.className = "card";
+
+    div.innerHTML = `
+      <p><b>Email:</b> ${usuario ? usuario.email : "Não encontrado"}</p>
+      <p><b>Telefone:</b> ${usuario ? usuario.telefone : "-"}</p>
+      <p><b>Instituição:</b> ${usuario ? usuario.instituicao : "-"}</p>
+      <p><b>Data:</b> ${p.data_presenca}</p>
+      <hr>
+    `;
+
+    lista.appendChild(div);
+  });
+
+}
+
+window.carregarPresencasAdmin = carregarPresencasAdmin;
