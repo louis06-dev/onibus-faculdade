@@ -167,6 +167,28 @@ async function marcarPresenca(){
   msg.innerText = "Presença registrada com sucesso 🎉";
 }
 
+async function naoVouVoltar(){
+
+  const { data: session } = await supabaseClient.auth.getSession();
+
+  const user = session.session.user;
+
+  const hoje = new Date().toLocaleDateString('sv-SE');
+
+  const { error } = await supabaseClient
+    .from("presencas")
+    .update({ volta: false })
+    .eq("user_id", user.id)
+    .eq("data", hoje);
+
+  if(error){
+    alert("Erro ao atualizar");
+    return;
+  }
+
+  alert("Você foi removido da volta 👍");
+}
+
 
 // ================= HISTÓRICO =================
 async function carregarHistorico(){

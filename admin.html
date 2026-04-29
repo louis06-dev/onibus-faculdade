@@ -37,7 +37,8 @@ async function carregarPresencasHoje(){
       hora,
       usuarios ( email, telefone, instituicao )
     `)
-    .eq("data", hoje)
+    .eq("data_presenca", hoje)
+    .eq("volta", true)
     .order("hora", { ascending:true });
 
   const lista = document.getElementById("lista");
