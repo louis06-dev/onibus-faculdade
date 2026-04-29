@@ -1,6 +1,11 @@
+/* RESET IMPORTANTE */
+*{
+  box-sizing: border-box;
+}
+
 body{
-  font-family: Arial, Helvetica, sans-serif;
-  background:#0e0068;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a);
   display:flex;
   justify-content:center;
   align-items:center;
@@ -10,58 +15,108 @@ body{
   padding:15px;
 }
 
-/* CARD RESPONSIVO */
+/* CARD */
 .card{
-  background:#050036;
-  padding:25px;
-  border-radius:14px;
+  background: rgba(15, 23, 42, 0.9);
+  backdrop-filter: blur(12px);
+  padding:28px;
+  border-radius:20px;
   width:100%;
   max-width:380px;
   text-align:center;
-  box-shadow:0 0 20px rgba(0,0,0,0.4);
+  box-shadow:0 20px 50px rgba(0,0,0,0.6);
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+/* TÍTULOS */
+h1, h2{
+  margin-bottom:15px;
+  font-weight:600;
+}
+
+/* GRUPO DE INPUT (resolve alinhamento e deixa mais bonito) */
+.input-group{
+  text-align:left;
+  margin-bottom:15px;
+}
+
+/* LABEL */
+label{
+  font-size:14px;
+  opacity:0.8;
+  display:block;
+  margin-bottom:5px;
 }
 
 /* INPUTS */
 input{
   width:100%;
   padding:14px;
-  margin:10px 0;
-  border-radius:8px;
-  border:none;
-  font-size:16px; /* evita zoom automático no iPhone */
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,0.1);
+  font-size:15px;
+  outline:none;
+  background: rgba(255,255,255,0.05);
+  color:white;
+  transition:0.25s;
 }
 
-/* BOTÕES */
+/* PLACEHOLDER */
+input::placeholder{
+  color:rgba(255,255,255,0.4);
+}
+
+/* FOCO */
+input:focus{
+  border-color:#38bdf8;
+  background: rgba(255,255,255,0.08);
+  box-shadow:0 0 0 3px rgba(56,189,248,0.25);
+}
+
+/* BOTÃO */
 button{
-  background:#22c55e;
+  margin-top:10px;
+  background: linear-gradient(135deg, #22c55e, #4ade80);
   border:none;
   padding:14px;
   width:100%;
-  border-radius:10px;
+  border-radius:12px;
   color:white;
-  font-weight:bold;
+  font-weight:600;
   font-size:16px;
   cursor:pointer;
+  transition:0.25s;
 }
 
 button:hover{
-  background:#16a34a;
+  transform: translateY(-2px);
+  box-shadow:0 10px 25px rgba(0,0,0,0.4);
 }
 
+button:active{
+  transform: scale(0.97);
+}
+
+/* LINKS */
 a{
   color:#38bdf8;
   text-decoration:none;
 }
 
-hr{
-  margin:25px 0;
-  opacity:0.3;
+a:hover{
+  text-decoration:underline;
 }
 
-/* 📱 Ajustes extras para telas muito pequenas */
+/* DIVISOR */
+hr{
+  margin:25px 0;
+  opacity:0.2;
+}
+
+/* MOBILE */
 @media (max-width: 400px){
   .card{
-    padding:18px;
+    padding:20px;
   }
 
   h1,h2{
