@@ -11,12 +11,58 @@
 <div class="card">
   <h2>Criar Conta</h2>
 
-  <input id="email" placeholder="Email">
-  <input id="telefone" placeholder="Telefone">
-  <input id="cpf" placeholder="CPF">
-  <input id="instituicao" placeholder="Instituição de ensino">
+  <input type="text" id="nome" placeholder="Nome completo">
+
+  <div class="input-group">
+  
+  <input
+    type="tel"
+    id="telefone"
+    maxlength="15"
+    placeholder="Telefone"
+    oninput="mascaraTelefone(this)"
+    autocomplete="off"
+  >
+</div>
+
+<div class="input-group">
+  
+  <input
+    type="text"
+    id="cpf"
+    maxlength="14"
+    placeholder="CPF"
+    oninput="mascaraCPF(this)"
+    autocomplete="off"
+  >
+</div>
+
+  <select id="instituicao" required>
+  <option value="">Selecione a instituição</option>
+
+  <option value="CONECTIVO">CONECTIVO</option>
+  <option value="DOCTUM">DOCTUM</option>
+  <option value="EXPOENTE">EXPOENTE</option>
+  <option value="UNEC">UNEC</option>
+  <option value="UNIASSELVI">UNIASSELVI</option>
+  
+  <option value="Outra">Outra</option>
+</select>
   <input id="senha" type="password" placeholder="Senha" required>
   <input id="confirmarSenha" type="password" placeholder="Confirme a senha" required>
+
+  <div id="regrasSenha" class="info-senha">
+  <p>✔ A senha deve conter:</p>
+
+  <ul>
+    <li>Mínimo de 6 caracteres</li>
+    <li>Pelo menos 1 letra</li>
+    <li>Pelo menos 1 número</li>
+    <li>Pelo menos 1 símbolo (!@#$%...)</li>
+  </ul>
+
+  <p id="statusSenha"></p>
+</div>
 
   <button onclick="cadastrar()">Cadastrar</button>
 

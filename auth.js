@@ -6,119 +6,270 @@ const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 //quando o usuario digitar (xx) xxx-xxx o que será salvo no banco de dados serão somente os numeros
 function limparTelefone(numero){
   return numero.replace(/\D/g, "");
-}
+}  
 
 
 // ================= CADASTRO =================
-async function cadastrar(){
+function mascaraTelefone(input){
 
-  const email = document.getElementById("email").value;
-  const telefone = limparTelefone(document.getElementById("telefone").value); 
-  const cpf = document.getElementById("cpf").value;
-  const instituicao = document.getElementById("instituicao").value;
-  const senha = document.getElementById("senha").value;
-  const confirmarSenha = document.getElementById("confirmarSenha").value;
+  let numero = input.value.replace(/\D/g, "");
 
-  // 🔐 VALIDAÇÃO DE SENHA
-  if(senha !== confirmarSenha){
-    document.getElementById("msg").innerText = "As senhas não coincidem";
-    return;
-  }
-  if(!email || !telefone || !cpf || !instituicao || !senha){
-  document.getElementById("msg").innerText = "Preencha todos os campos";
-  return;
+  // limita em 11 dígitos
+  numero = numero.substring(0,11);
+
+  // aplica máscara
+  numero = numero.replace(/^(\d{2})(\d)/g, "($1) $2");
+  numero = numero.replace(/(\d{5})(\d)/, "$1-$2");
+
+  input.value = numero;
 }
 
-  const { data, error } = await supabaseClient.auth.signUp({
-    phone: telefone,
-    email: email,
-    password: senha
-  });
+function mascaraCPF(input){
+
+  let cpf = input.value.replace(/\D/g, "");
+
+  // limita em 11 dígitos
+  cpf = cpf.substring(0,11);
+
+  cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2");
+  cpf = cpf.replace(/(\d{3})(\d)/, "$1.$2");
+  cpf = cpf.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+  input.value = cpf;
+}
+
+
+// ================= VALIDAÇÃO DE SENHA =================
+function validarSenha(){
+
+  const senha =
+    document.getElementById("senha").value;
+
+  const confirmar =
+    document.getElementById("confirmarSenha").value;
+
+  const statusSenha =
+    document.getElementById("statusSenha");
+
+  const possuiNumero = /\d/.test(senha);
+  const possuiLetra = /[A-Za-z]/.test(senha);
+  const possuiSimbolo =
+    /[!@#$%^&*(),.?":{}|<>]/.test(senha);
+
+  // valida requisitos
+  if(
+    senha.length < 6 ||
+    !possuiNumero ||
+    !possuiLetra ||
+    !possuiSimbolo
+  ){
+
+    statusSenha.innerHTML =
+      "❌ Senha fraca";
+
+    statusSenha.style.color = "red";
+
+    return false;
+  }
+
+  // verifica confirmação
+  if(confirmar.length > 0){
+
+    if(senha !== confirmar){
+
+      statusSenha.innerHTML =
+        "❌ As senhas não coincidem";
+
+      statusSenha.style.color = "red";
+
+      return false;
+
+    }else{
+
+      statusSenha.innerHTML =
+        "✔ Senha válida";
+
+      statusSenha.style.color = "green";
+    }
+  }
+
+  return true;
+}
+
+
+// ================= CADASTRAR =================
+async function cadastrar(){
+
+  const nome =
+    document.getElementById("nome").value.trim();
+
+  const telefone =
+    limparTelefone(
+      document.getElementById("telefone").value
+    );
+
+  const cpf =
+    document.getElementById("cpf")
+    .value
+    .replace(/\D/g, "");
+
+  const instituicao =
+    document.getElementById("instituicao").value;
+
+  const senha =
+    document.getElementById("senha").value;
+
+  // validação simples de telefone
+  if(telefone.length !== 11){
+
+    document.getElementById("msg").innerText =
+      "Telefone inválido";
+
+    return;
+  }
+
+  // validação simples de CPF
+  if(cpf.length !== 11){
+
+    document.getElementById("msg").innerText =
+      "CPF inválido";
+
+    return;
+  }
+
+  // valida senha
+  if(!validarSenha()){
+
+    document.getElementById("msg").innerText =
+      "Verifique os requisitos da senha";
+
+    return;
+  }
+
+  // valida campos
+  if(!nome || !telefone || !cpf || !instituicao || !senha){
+
+    document.getElementById("msg").innerText =
+      "Preencha todos os campos";
+
+    return;
+  }
+
+  // email automático para auth
+  const emailFake = cpf + "@app.local";
+
+  // cria usuário
+  const { data, error } =
+    await supabaseClient.auth.signUp({
+
+      email: emailFake,
+      password: senha
+    });
 
   console.log("RESPOSTA SIGNUP:", data, error);
 
   if(error){
-    document.getElementById("msg").innerText = error.message;
-    return; 
+
+    document.getElementById("msg").innerText =
+      error.message;
+
+    return;
   }
 
-  // ⚠️ esperar sessão ficar ativa
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-  const userId = sessionData.session.user.id;
+  const userId = data.user.id;
 
-  const { error: erroDB } = await supabaseClient
-    .from("usuarios")
-    .insert({
-      id: userId,
-      email: email,
-      telefone: telefone,
-      cpf: cpf,
-      instituicao: instituicao
-    });
+  // salva dados extras
+  const { error: erroDB } =
+    await supabaseClient
+      .from("usuarios")
+      .insert({
+
+        id: userId,
+        nome: nome,
+        telefone: telefone,
+        cpf: cpf,
+        instituicao: instituicao
+      });
 
   document.getElementById("msg").innerText =
-    erroDB ? erroDB.message : "Conta criada. Redirecionando...";
+    erroDB
+      ? erroDB.message
+      : "Conta criada. Redirecionando...";
 
-    //tempo de espera após criar a conta
-    setTimeout(() => {
-      window.location.href = "login.html";
-    }, 2000);
+  setTimeout(() => {
+    window.location.href = "login.html";
+  }, 2000);
 }
+
+
+// ================= EVENTOS =================
+window.addEventListener("DOMContentLoaded", () => {
+
+  const senha =
+    document.getElementById("senha");
+
+  const confirmar =
+    document.getElementById("confirmarSenha");
+
+  if(senha && confirmar){
+
+    senha.addEventListener(
+      "input",
+      validarSenha
+    );
+
+    confirmar.addEventListener(
+      "input",
+      validarSenha
+    );
+  }
+
+});
 
 // ================= LOGIN =================
 async function login(){
 
-  let loginInput = document.getElementById("login").value.trim();
-  const telefoneDigitado = limparTelefone(loginInput);
-  const senha = document.getElementById("senha").value.trim();
+  const cpf = document
+    .getElementById("login")
+    .value
+    .replace(/\D/g, "");
 
-  let emailParaLogin = loginInput;
+  const senha = document  
+    .getElementById("senha")
+    .value
+    .trim();
 
-  // se não digitou nada
-if(!loginInput.includes("@")){
-
-  const { data, error } = await supabaseClient
-    .from("usuarios")
-    .select("email")
-    .eq("telefone", telefoneDigitado)
-    .maybeSingle();
-
-  if(!data){
-    document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos";
-    return;
-  }
-
-  emailParaLogin = data.email;
-}
+  // email automático baseado no CPF  
+  const emailFake = cpf + "@app.local";
 
   const { error } = await supabaseClient.auth.signInWithPassword({
-    email: emailParaLogin,
+    email: emailFake,
     password: senha
-  });
+  });  
 
-  //se o usuário inserir dados não cadastrados essa mensagem irá aparecer;
-  //caso contrário, ele entra no sistema (presenca.html);
-  /*if(error){
-    document.getElementById("msg").innerText = "Email/Telefone ou senha inválidos"; //caso o usuário insira dados não cadastrados essa mensagem irá aparecer
+  if(error){
+    document.getElementById("msg").innerText =
+      "CPF ou senha inválidos";
+    return;  
+  }  
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  const userId = sessionData.session.user.id;  
+
+  const { data: usuario } = await supabaseClient
+    .from("usuarios")
+    .select("tipo")
+    .eq("id", userId)
+    .single();
+
+  if(usuario.tipo === "admin"){
+    window.location.href = "admin.html";
   }else{
-    window.location.href = "presenca.html"; 
-  }*/
-
-  const { data: sessionData } = await supabaseClient.auth.getSession();
-const userId = sessionData.session.user.id;
-
-const { data: usuario } = await supabaseClient
-  .from("usuarios")
-  .select("tipo")
-  .eq("id", userId)
-  .single();
-
-if(usuario.tipo === "admin"){
-  window.location.href = "admin.html";
-}else{
-  window.location.href = "presenca.html";
-}
-}
+    window.location.href = "presenca.html";
+  }  
+}  
 
 
 // ================= LOGOUT =================
@@ -136,60 +287,191 @@ window.logout = logout;
 // ================= MARCAR PRESENÇA =================
 async function marcarPresenca(){
 
-  const { data } = await supabaseClient.auth.getSession();
+  const { data } =
+    await supabaseClient.auth.getSession();
 
   if(!data.session){
+
     window.location.href = "login.html";
+
     return;
   }
 
-  const userId = data.session.user.id;
+  const userId =
+    data.session.user.id;
 
-  // tenta inserir direto (o banco impede duplicado)
-  const { error } = await supabaseClient
-    .from("presencas")
-    .insert({
-      user_id: userId
-    });
+  // tenta inserir direto
+  const { error } =
+    await supabaseClient
+      .from("presencas")
+      .insert({
 
-  const msg = document.getElementById("msg");
+        user_id: userId,
+
+        status_retorno: "aguardando"
+      });
+
+  const msg =
+    document.getElementById("msg");
 
   if(error){
+
     if(error.message.includes("duplicate key")){
-      msg.innerText = "Você já marcou presença hoje ✔️";
-    } else {
-      msg.innerText = "Erro ao marcar presença";
+
+      msg.innerText =
+        "Você já marcou presença hoje ✔️";
+
+    }else{
+
+      msg.innerText =
+        "Erro ao marcar presença";
+
       console.log(error);
     }
+
     return;
   }
 
-  msg.innerText = "Presença registrada com sucesso 🎉";
+  msg.innerText =
+    "Presença registrada com sucesso 🎉";
+
+  carregarStatusAtual();
 }
 
-async function naoVouVoltar(){
 
-  const { data: session } = await supabaseClient.auth.getSession();
+// ================= STATUS DE RETORNO =================
+async function atualizarStatus(novoStatus){
 
-  const user = session.session.user;
+  const { data } =
+    await supabaseClient.auth.getSession();
 
-  const hoje = new Date().toLocaleDateString('sv-SE');
+  if(!data.session){
 
-  const { error } = await supabaseClient
-    .from("presencas")
-    .update({ volta: false })
-    .eq("user_id", user.id)
-    .eq("data", hoje);
+    window.location.href = "login.html";
+
+    return;
+  }
+
+  const userId =
+    data.session.user.id;
+
+  // busca última presença do usuário
+  const { data: ultimaPresenca, error: erroBusca } =
+    await supabaseClient
+      .from("presencas")
+      .select("id")
+      .eq("user_id", userId)
+      .order("data_presenca", {
+        ascending:false
+      })
+      .limit(1)
+      .single();
+
+  if(erroBusca || !ultimaPresenca){
+
+    console.log(erroBusca);
+
+    document.getElementById("statusAtual").innerText =
+      "Marque presença primeiro";
+
+    return;
+  }
+
+  // atualiza status
+  const { error } =
+    await supabaseClient
+      .from("presencas")
+      .update({
+
+        status_retorno: novoStatus
+
+      })
+      .eq("id", ultimaPresenca.id);
+
+  const statusAtual =
+    document.getElementById("statusAtual");
 
   if(error){
-    alert("Erro ao atualizar");
+
+    statusAtual.innerText =
+      "Erro ao atualizar status";
+
+    console.log(error);
+
     return;
   }
 
-  alert("Você foi removido da volta 👍");
+  const textos = {
+
+    aguardando:
+      "⏳ Aguardando ônibus",
+
+    embarcado:
+      "🚌 Embarque confirmado",
+
+    nao_volta:
+      "❌ Você não retorna hoje",
+
+    cheguei:
+      "🏠 Chegada confirmada"
+  };
+
+  statusAtual.innerText =
+    textos[novoStatus];
+}
+
+// ================= CARREGAR STATUS =================
+async function carregarStatusAtual(){
+
+  const { data } =
+    await supabaseClient.auth.getSession();
+
+  if(!data.session) return;
+
+  const userId =
+    data.session.user.id;
+
+  const { data: ultimaPresenca, error: erroBusca } =
+  await supabaseClient
+    .from("presencas")
+    .select("id, status_retorno, data_presenca")
+    .eq("user_id", userId)
+    .order("created_at", {
+      ascending:false
+    })
+    .limit(1)
+    .single();
+
+  if(!presenca) return;
+
+  const statusAtual =
+    document.getElementById("statusAtual");
+
+  const textos = {
+
+    aguardando:
+      "⏳ Aguardando ônibus",
+
+    embarcado:
+      "🚌 Embarque confirmado",
+
+    nao_volta:
+      "❌ Você não retorna hoje",
+
+    cheguei:
+      "🏠 Chegada confirmada"
+  };
+
+  statusAtual.innerText =
+    textos[presenca.status_retorno] || "";
 }
 
 
+// ================= NÃO VOLTO =================
+async function naoVouVoltar(){
+
+  atualizarStatus("nao_volta");
+}
 // ================= HISTÓRICO =================
 async function carregarHistorico(){
 
@@ -204,7 +486,7 @@ async function carregarHistorico(){
 
   const { data: presencas, error } = await supabaseClient
     .from("presencas")
-    .select("data_presenca")
+    .select("id, data_presenca")
     .eq("user_id", userId)
     .order("data_presenca", { ascending:false });
 
@@ -228,67 +510,292 @@ async function carregarHistorico(){
 
 async function carregarPresencasAdmin(){
 
-  const { data: sessionData } = await supabaseClient.auth.getSession();
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
 
   if(!sessionData.session){
+
     window.location.href = "login.html";
+
     return;
   }
 
-  const lista = document.getElementById("lista");
+  const lista =
+    document.getElementById("lista");
+
   lista.innerHTML = "Carregando...";
 
-  // 1️⃣ Buscar presenças
-  const { data: presencas, error: erroPresencas } =
+  // buscar presenças
+  const { data: presencas, error } =
     await supabaseClient
       .from("presencas")
       .select("*")
-      .order("data_presenca", { ascending:false });
+      .order("data_presenca", {
+        ascending:false
+      });
 
-  if(erroPresencas){
-    lista.innerHTML = erroPresencas.message;
-    console.log(erroPresencas);
+  if(error){
+
+    lista.innerHTML =
+      "Erro ao carregar presenças";
+
+    console.log(error);
+
     return;
   }
 
-  if(!presencas || presencas.length === 0){
-    lista.innerHTML = "Nenhuma presença encontrada.";
-    return;
-  }
-
-  // 2️⃣ Buscar usuários
-  const { data: usuarios, error: erroUsuarios } =
+  // buscar usuários
+  const { data: usuarios } =
     await supabaseClient
       .from("usuarios")
-      .select("id, email, telefone, instituicao");
+      .select("id, nome, cpf, instituicao");
 
-  if(erroUsuarios){
-    lista.innerHTML = erroUsuarios.message;
-    console.log(erroUsuarios);
+  if(!presencas || presencas.length === 0){
+
+    lista.innerHTML =
+      "Nenhuma presença encontrada.";
+
     return;
   }
 
-  // 3️⃣ Cruzar manualmente
   lista.innerHTML = "";
 
   presencas.forEach(p => {
 
-    const usuario = usuarios.find(u => u.id === p.user_id);
+    const usuario =
+      usuarios.find(u =>
+        u.id === p.user_id
+      );
 
-    const div = document.createElement("div");
+    // status
+    let statusTexto = "⏳ Aguardando ônibus";
+
+    if(p.status_retorno === "embarcado"){
+      statusTexto = "🚌 Embarcado";
+    }
+
+    if(p.status_retorno === "nao_volta"){
+      statusTexto = "❌ Não volta";
+    }
+
+    if(p.status_retorno === "cheguei"){
+      statusTexto = "🏠 Chegou";
+    }
+
+    const div =
+      document.createElement("div");
+
     div.className = "card";
 
     div.innerHTML = `
-      <p><b>Email:</b> ${usuario ? usuario.email : "Não encontrado"}</p>
-      <p><b>Telefone:</b> ${usuario ? usuario.telefone : "-"}</p>
-      <p><b>Instituição:</b> ${usuario ? usuario.instituicao : "-"}</p>
-      <p><b>Data:</b> ${p.data_presenca}</p>
+
+      <p>
+        <b>Nome:</b>
+        ${usuario ? usuario.nome : "Não encontrado"}
+      </p>
+
+      <p>
+        <b>CPF:</b>
+        ${usuario ? usuario.cpf : "-"}
+      </p>
+
+      <p>
+        <b>Instituição:</b>
+        ${usuario ? usuario.instituicao : "-"}
+      </p>
+
+      <p>
+        <b>Status:</b>
+        ${statusTexto}
+      </p>
+
+      <p>
+        <b>Data:</b>
+        ${p.data_presenca}
+      </p>
+
       <hr>
     `;
 
     lista.appendChild(div);
   });
-
 }
 
-window.carregarPresencasAdmin = carregarPresencasAdmin;
+// ================= CANCELAR PRESENÇA =================
+async function cancelarPresenca(){
+
+  const confirmar = confirm(
+    "Deseja realmente cancelar sua presença de hoje?"
+  );
+
+  if(!confirmar) return;
+
+  const { data } =
+    await supabaseClient.auth.getSession();
+
+  if(!data.session){
+
+    window.location.href = "login.html";
+
+    return;
+  }
+
+  const userId =
+    data.session.user.id;
+
+  // busca última presença
+  const { data: ultimaPresenca } =
+    await supabaseClient
+      .from("presencas")
+      .select("id")
+      .eq("user_id", userId)
+      .order("data_presenca", {
+        ascending:false
+      })
+      .limit(1)
+      .single();
+
+  if(!ultimaPresenca){
+
+    document.getElementById("msg").innerText =
+      "Nenhuma presença encontrada";
+
+    return;
+  }
+
+  // remove presença
+  const { error } =
+    await supabaseClient
+      .from("presencas")
+      .delete()
+      .eq("id", ultimaPresenca.id);
+
+  // erro ao deletar
+  if(error){
+
+    document.getElementById("msg").innerText =
+      "Erro ao cancelar presença";
+
+    console.log(error);
+
+    return;
+  }
+
+  // sucesso
+  document.getElementById("msg").innerText =
+    "Presença cancelada com sucesso ✔️";
+
+  // limpa status visual
+  const statusAtual =
+    document.getElementById("statusAtual");
+
+  if(statusAtual){
+    statusAtual.innerText = "";
+  }
+
+  // atualiza histórico
+  carregarHistorico();
+
+  // limpa histórico imediatamente se vazio
+  const lista =
+    document.getElementById("lista");
+
+  if(lista){
+    lista.innerHTML = "Atualizando...";
+  }
+}
+
+window.cancelarPresenca = cancelarPresenca;
+
+// ================= STATUS IDA =================
+async function atualizarStatusIda(status){
+
+  const { data } =
+    await supabaseClient.auth.getSession();
+
+  if(!data.session) return;
+
+  const userId =
+    data.session.user.id;
+
+  const { data: ultimaPresenca } =
+    await supabaseClient
+      .from("presencas")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at", {
+        ascending:false
+      })
+      .limit(1)
+      .single();
+
+  if(!ultimaPresenca) return;
+
+  const { error } =
+    await supabaseClient
+      .from("presencas")
+      .update({
+
+        status_ida: status
+
+      })
+      .eq("id", ultimaPresenca.id);
+
+  if(error){
+
+    console.log(error);
+
+    return;
+  }
+
+  carregarStatusAtual();
+}
+
+// ================= STATUS VOLTA =================
+async function atualizarStatusVolta(status){
+
+  const { data } =
+    await supabaseClient.auth.getSession();
+
+  if(!data.session) return;
+
+  const userId =
+    data.session.user.id;
+
+  const { data: ultimaPresenca } =
+    await supabaseClient
+      .from("presencas")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at", {
+        ascending:false
+      })
+      .limit(1)
+      .single();
+
+  if(!ultimaPresenca) return;
+
+  const { error } =
+    await supabaseClient
+      .from("presencas")
+      .update({
+
+        status_volta: status
+
+      })
+      .eq("id", ultimaPresenca.id);
+
+  if(error){
+
+    console.log(error);
+
+    return;
+  }
+
+  carregarStatusAtual();
+}
+window.atualizarStatusIda =
+  atualizarStatusIda;
+
+window.atualizarStatusVolta =
+  atualizarStatusVolta;

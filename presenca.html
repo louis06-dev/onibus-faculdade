@@ -3,45 +3,91 @@
 <head>
 <meta charset="UTF-8">
 <title>Registrar Presença</title>
+
 <link rel="stylesheet" href="estilo.css">
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
 
 <div class="card">
+
   <h2>Controle de Presença</h2>
 
-  <button onclick="marcarPresenca()">Marcar presença</button>
-  <button onclick="naoVouVoltar()">Não retorno de ônibus hoje</button>
+  <button onclick="marcarPresenca()">
+    ✅ Marcar presença
+  </button>
 
-  <p id="msg"></p>
+  <button onclick="cancelarPresenca()">
+  ❌ Cancelar presença
+  </button>
 
   <hr>
 
+  <h3>Status de retorno</h3>
+
+  <button onclick="atualizarStatus('aguardando')">
+    ⏳ Aguardando ônibus
+  </button>
+
+  <button onclick="atualizarStatus('embarcado')">
+    🚌 Já embarquei
+  </button>
+
+  <button onclick="naoVouVoltar()">
+  ❌ Não volto hoje
+  </button>
+
+  <button onclick="atualizarStatus('cheguei')">
+    🏠 Já cheguei em casa
+  </button>
+
+  <p id="statusAtual"></p>
+
+  <hr>
+
+  <p id="msg"></p>
+
   <h3>Meu histórico</h3>
-  <div id="lista">Carregando...</div>
+
+  <div id="lista">
+    Carregando...
+  </div>
 
   <br>
-  <button onclick="logout()">Sair</button>
+
+  <button onclick="logout()">
+    Sair
+  </button>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <script src="auth.js"></script>
 
 <script>
+
 // 🔐 proteger página
 async function protegerPagina(){
-  const { data } = await supabaseClient.auth.getSession();
+
+  const { data } =
+    await supabaseClient.auth.getSession();
 
   if(!data.session){
+
     window.location.href = "login.html";
+
     return;
   }
 
   carregarHistorico();
+
+  carregarStatusAtual();
 }
 
 protegerPagina();
+
 </script>
 
 </body>
