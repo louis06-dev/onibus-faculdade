@@ -13,6 +13,19 @@ content="width=device-width, initial-scale=1.0">
 
 <style>
 
+.painel-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+}
+
+@media(max-width:800px){
+
+  .painel-grid{
+    grid-template-columns:1fr;
+  }
+}
+
 .status{
   padding:6px 10px;
   border-radius:8px;
@@ -21,11 +34,13 @@ content="width=device-width, initial-scale=1.0">
   font-weight:bold;
 }
 
-.aguardando{
+.aguardando_ida,
+.aguardando_volta{
   background:#fff3cd;
 }
 
-.embarcado{
+.embarcou_ida,
+.embarcado_volta{
   background:#d4edda;
 }
 
@@ -33,7 +48,8 @@ content="width=device-width, initial-scale=1.0">
   background:#f8d7da;
 }
 
-.cheguei{
+.cheguei_casa,
+.chegou_faculdade{
   background:#d1ecf1;
 }
 
@@ -69,15 +85,21 @@ content="width=device-width, initial-scale=1.0">
 
   <h2>Painel do Motorista 🚌</h2>
 
-  <div id="resumo"></div>
+  <a href="motorista-ida.html">
+    <button>
+      🚍 Painel da Ida
+    </button>
+  </a>
 
-  <hr>
+  <br><br>
 
-  <div id="lista">
-    Carregando...
-  </div>
+  <a href="motorista-volta.html">
+    <button>
+      🏠 Painel da Volta
+    </button>
+  </a>
 
-  <br>
+  <br><br>
 
   <button onclick="logout()">
     Sair
@@ -103,23 +125,30 @@ async function carregarPresencasAdmin(){
     return;
   }
 
-  const lista =
-    document.getElementById("lista");
+  const listaIda =
+    document.getElementById("listaIda");
 
-  lista.innerHTML = "Carregando...";
+  const listaVolta =
+    document.getElementById("listaVolta");
 
-  // busca presenças
+  listaIda.innerHTML = "Carregando...";
+  listaVolta.innerHTML = "Carregando...";
+
+  // buscar presenças
   const { data: presencas, error } =
     await supabaseClient
       .from("presencas")
       .select("*")
-      .order("data_presenca", {
+      .order("created_at", {
         ascending:false
       });
 
   if(error){
 
-    lista.innerHTML =
+    listaIda.innerHTML =
+      "Erro ao carregar";
+
+    listaVolta.innerHTML =
       "Erro ao carregar";
 
     console.log(error);
@@ -127,7 +156,7 @@ async function carregarPresencasAdmin(){
     return;
   }
 
-  // busca usuários
+  // buscar usuários
   const { data: usuarios } =
     await supabaseClient
       .from("usuarios")
@@ -135,36 +164,17 @@ async function carregarPresencasAdmin(){
 
   if(!presencas || presencas.length === 0){
 
-    lista.innerHTML =
+    listaIda.innerHTML =
+      "<p>Nenhuma presença encontrada.</p>";
+
+    listaVolta.innerHTML =
       "<p>Nenhuma presença encontrada.</p>";
 
     return;
   }
 
-  // resumo
-  const aguardando =
-    presencas.filter(p =>
-      p.status_retorno === "aguardando"
-    ).length;
-
-  const embarcado =
-    presencas.filter(p =>
-      p.status_retorno === "embarcado"
-    ).length;
-
-  document.getElementById("resumo").innerHTML = `
-
-    <p>⏳ Aguardando:
-      <b>${aguardando}</b>
-    </p>
-
-    <p>🚌 Embarcados:
-      <b>${embarcado}</b>
-    </p>
-
-  `;
-
-  lista.innerHTML = "";
+  listaIda.innerHTML = "";
+  listaVolta.innerHTML = "";
 
   presencas.forEach(p => {
 
@@ -173,31 +183,30 @@ async function carregarPresencasAdmin(){
         u.id === p.user_id
       );
 
-    const status =
-      p.status_retorno || "aguardando";
+    // ================= IDA =================
 
-    const nomes = {
+    const statusIda =
+      p.status_ida || "aguardando_ida";
 
-      aguardando:
-        "⏳ Aguardando ônibus",
+    const nomesIda = {
 
-      embarcado:
-        "🚌 Embarcado",
+      aguardando_ida:
+        "⏳ Aguardando ida",
 
-      nao_volta:
-        "❌ Não retorna de ônibus",
+      embarcou_ida:
+        "🚌 Embarcou",
 
-      cheguei:
-        "🏠 Chegou em casa"
+      chegou_faculdade:
+        "🏫 Chegou na faculdade"
     };
 
-    const div =
+    const divIda =
       document.createElement("div");
 
-    div.className =
+    divIda.className =
       "card-aluno";
 
-    div.innerHTML = `
+    divIda.innerHTML = `
 
       <div class="topo">
 
@@ -205,41 +214,95 @@ async function carregarPresencasAdmin(){
           ${usuario?.nome || "Aluno"}
         </div>
 
-        <div>
-          📅 ${p.data_presenca}
+      </div>
+
+      <div class="info">
+        ☎️
+        <a
+          href="https://wa.me/55${usuario?.telefone}"
+          target="_blank"
+        >
+          ${usuario?.telefone || "-"}
+        </a>
+      </div>
+
+      <div class="info">
+        🏫 ${usuario?.instituicao || "-"}
+      </div>
+
+      <div class="status ${statusIda}">
+        ${nomesIda[statusIda]}
+      </div>
+
+    `;
+
+    listaIda.appendChild(divIda);
+
+    // ================= VOLTA =================
+
+    const statusVolta =
+      p.status_volta || "aguardando_volta";
+
+    const nomesVolta = {
+
+      aguardando_volta:
+        "⏳ Aguardando volta",
+
+      embarcado_volta:
+        "🚌 Embarcou",
+
+      nao_volta:
+        "❌ Não volta",
+
+      cheguei_casa:
+        "🏠 Chegou em casa"
+    };
+
+    const divVolta =
+      document.createElement("div");
+
+    divVolta.className =
+      "card-aluno";
+
+    divVolta.innerHTML = `
+
+      <div class="topo">
+
+        <div class="nome">
+          ${usuario?.nome || "Aluno"}
         </div>
 
       </div>
 
       <div class="info">
-        ☎️ Telefone:    
-  <a
-    href="https://wa.me/55${usuario?.telefone}"
-    target="_blank"
-  >
-    ${usuario?.telefone || "-"}
-  </a>
-
-</div>
+        ☎️
+        <a
+          href="https://wa.me/55${usuario?.telefone}"
+          target="_blank"
+        >
+          ${usuario?.telefone || "-"}
+        </a>
+      </div>
 
       <div class="info">
-        🏫 Instituição: ${usuario?.instituicao || "-"}
+        🏫 ${usuario?.instituicao || "-"}
       </div>
-      
-      
-      <div class="status ${status}">
-        ${nomes[status]}
+
+      <div class="status ${statusVolta}">
+        ${nomesVolta[statusVolta]}
       </div>
 
     `;
 
-    lista.appendChild(div);
+    listaVolta.appendChild(divVolta);
+
   });
+
 }
 
 carregarPresencasAdmin();
 
-// atualiza sozinho a cada 10 segundos
+// atualiza sozinho
 setInterval(
   carregarPresencasAdmin,
   60000

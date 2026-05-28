@@ -1,0 +1,26 @@
+Agora seu sistema já está com:
+
+cadastro/login por CPF
+validação de senha
+presença
+status de retorno
+painel do motorista
+atualização em tempo real
+cancelamento de presença
+histórico sincronizado
+
+---> Próximas melhorias que fariam bastante diferença no uso real:
+
+confirmação visual por cores no painel
+contador de alunos restantes
+filtro por instituição
+botão “todos embarcaram”
+horário automático de embarque
+som/notificação quando novo aluno marcar presença
+geolocalização opcional
+painel do aluno mostrando ETA do ônibus
+QR Code de embarque
+exportar relatório PDF/Excel
+modo offline/cache
+
+Seu projeto já está bem próximo de um sistema real de transporte universitário.

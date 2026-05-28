@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Painel Volta</title>
+
+<link rel="stylesheet" href="estilo.css">
+
+<style>
+
+.card-aluno{
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:15px;
+  margin-bottom:15px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>🏠 Painel da Volta</h2>
+
+  <div id="listaVolta">
+    Carregando...
+  </div>
+
+  <br>
+    <br>
+  <a href="motorista-ida.html">
+
+  <button>
+    🏠 Ver painel da ida
+  </button>
+
+</a>
+
+<br><br>
+
+    <button onclick="logout()">
+    Sair
+    </button>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script src="auth.js"></script>
+
+<script>
+
+async function carregarVolta(){
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  if(!sessionData.session){
+
+    window.location.href = "login.html";
+
+    return;
+  }
+
+  const lista =
+    document.getElementById("listaVolta");
+
+  lista.innerHTML = "Carregando...";
+
+  // buscar presenças
+  const { data: presencas, error } =
+    await supabaseClient
+      .from("presencas")
+      .select("*")
+      .order("created_at", {
+        ascending:false
+      });
+
+  if(error){
+
+    lista.innerHTML =
+      "Erro ao carregar";
+
+    console.log(error);
+
+    return;
+  }
+
+  // buscar usuários
+  const { data: usuarios, error: erroUsuarios } =
+    await supabaseClient
+      .from("usuarios")
+      .select("*");
+
+  if(erroUsuarios){
+
+    lista.innerHTML =
+      "Erro ao carregar usuários";
+
+    console.log(erroUsuarios);
+
+    return;
+  }
+
+  lista.innerHTML = "";
+
+  if(!presencas || presencas.length === 0){
+
+    lista.innerHTML =
+      "<p>Nenhuma presença.</p>";
+
+    return;
+  }
+
+  presencas.forEach(p => {
+
+    const usuario =
+      usuarios.find(u =>
+        u.id === p.user_id
+      );
+
+    const status =
+      p.status_volta || "aguardando_volta";
+
+    const nomes = { 
+
+      aguardando_volta:
+        "⏳ Aguardando",
+
+      embarcado_volta:
+        "🚌 Embarcou",
+
+      nao_volta:
+        "❌ Não volta de ônibus",
+
+      cheguei_casa:
+        "🏠 Chegou"
+    };
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "card-aluno";
+
+    div.innerHTML = `
+
+      <p>
+        👤Aluno: <b>${usuario?.nome || "Aluno"}</b>
+      </p>
+
+      <p>
+        🏫 Instituição: ${usuario?.instituicao || "-"}
+      </p>
+
+      <p>
+        ☎️ Telefone: 
+        <a
+          href="https://wa.me/55${usuario?.telefone}"
+          target="_blank"
+        >
+          ${usuario?.telefone || "-"}
+        </a>
+      </p>
+
+      <p>
+        ${nomes[status]}
+      </p>
+
+    `;
+
+    lista.appendChild(div);
+
+  });
+
+}
+
+carregarVolta();
+
+setInterval(
+  carregarVolta,
+  10000
+);
+
+</script>
+
+</body>
+</html>

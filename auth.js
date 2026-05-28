@@ -308,7 +308,8 @@ async function marcarPresenca(){
 
         user_id: userId,
 
-        status_retorno: "aguardando"
+        status_ida: "aguardando_ida",
+        status_volta: "aguardando_volta"
       });
 
   const msg =
@@ -431,39 +432,70 @@ async function carregarStatusAtual(){
   const userId =
     data.session.user.id;
 
-  const { data: ultimaPresenca, error: erroBusca } =
-  await supabaseClient
-    .from("presencas")
-    .select("id, status_retorno, data_presenca")
-    .eq("user_id", userId)
-    .order("created_at", {
-      ascending:false
-    })
-    .limit(1)
-    .single();
+  const { data: ultimaPresenca, error } =
+    await supabaseClient
+      .from("presencas")
+      .select(`
+        status_ida,
+        status_volta
+      `)
+      .eq("user_id", userId)
+      .order("created_at", {
+        ascending:false
+      })
+      .limit(1)
+      .single();
 
-  if(!presenca) return;
+  if(error || !ultimaPresenca){
+    console.log(error);
+    return;
+  }
 
   const statusAtual =
     document.getElementById("statusAtual");
 
-  const textos = {
+  if(!statusAtual) return;
 
-    aguardando:
-      "⏳ Aguardando ônibus",
+  const textosIda = {
 
-    embarcado:
-      "🚌 Embarque confirmado",
+    aguardando_ida:
+      "⏳ Aguardando ida",
 
-    nao_volta:
-      "❌ Você não retorna hoje",
+    embarcou_ida:
+      "🚌 Embarcou",
 
-    cheguei:
-      "🏠 Chegada confirmada"
+    chegou_faculdade:
+      "🏫 Chegou na faculdade"
   };
 
-  statusAtual.innerText =
-    textos[presenca.status_retorno] || "";
+  const textosVolta = {
+
+    aguardando_volta:
+      "⏳ Aguardando volta",
+
+    embarcado_volta:
+      "🚌 Embarcou na volta",
+
+    nao_volta:
+      "❌ Não volta hoje",
+
+    cheguei_casa:
+      "🏠 Chegou em casa"
+  };
+
+  statusAtual.innerHTML = `
+
+    <p>
+      <b>IDA:</b>
+      ${textosIda[ultimaPresenca.status_ida] || "-"}
+    </p>
+
+    <p>
+      <b>VOLTA:</b>
+      ${textosVolta[ultimaPresenca.status_volta] || "-"}
+    </p>
+
+  `;
 }
 
 
@@ -520,10 +552,14 @@ async function carregarPresencasAdmin(){
     return;
   }
 
-  const lista =
-    document.getElementById("lista");
+  const listaIda =
+  document.getElementById("listaIda");
 
-  lista.innerHTML = "Carregando...";
+const listaVolta =
+  document.getElementById("listaVolta");
+
+listaIda.innerHTML = "Carregando...";
+listaVolta.innerHTML = "Carregando...";
 
   // buscar presenças
   const { data: presencas, error } =
@@ -536,8 +572,11 @@ async function carregarPresencasAdmin(){
 
   if(error){
 
-    lista.innerHTML =
-      "Erro ao carregar presenças";
+   listaIda.innerHTML =
+  "Erro ao carregar";
+
+  listaVolta.innerHTML =
+  "Erro ao carregar";
 
     console.log(error);
 
@@ -552,73 +591,126 @@ async function carregarPresencasAdmin(){
 
   if(!presencas || presencas.length === 0){
 
-    lista.innerHTML =
-      "Nenhuma presença encontrada.";
+    listaIda.innerHTML =
+  "<p>Nenhuma presença encontrada.</p>";
+
+    listaVolta.innerHTML =
+  "<p>Nenhuma presença encontrada.</p>";
 
     return;
   }
 
-  lista.innerHTML = "";
+  listaIda.innerHTML = "";
+  listaVolta.innerHTML = "";
 
   presencas.forEach(p => {
 
-    const usuario =
-      usuarios.find(u =>
-        u.id === p.user_id
-      );
+  const usuario =
+    usuarios.find(u =>
+      u.id === p.user_id
+    );
 
-    // status
-    let statusTexto = "⏳ Aguardando ônibus";
+  // ================= IDA =================
 
-    if(p.status_retorno === "embarcado"){
-      statusTexto = "🚌 Embarcado";
-    }
+  const statusIda =
+    p.status_ida || "aguardando_ida";
 
-    if(p.status_retorno === "nao_volta"){
-      statusTexto = "❌ Não volta";
-    }
+  const nomesIda = {
 
-    if(p.status_retorno === "cheguei"){
-      statusTexto = "🏠 Chegou";
-    }
+    aguardando_ida:
+      "⏳ Aguardando ida",
 
-    const div =
-      document.createElement("div");
+    embarcou_ida:
+      "🚌 Embarcou",
 
-    div.className = "card";
+    chegou_faculdade:
+      "🏫 Chegou na faculdade"
+  };
 
-    div.innerHTML = `
+  const divIda =
+    document.createElement("div");
 
-      <p>
-        <b>Nome:</b>
-        ${usuario ? usuario.nome : "Não encontrado"}
-      </p>
+  divIda.className =
+    "card-aluno";
 
-      <p>
-        <b>CPF:</b>
-        ${usuario ? usuario.cpf : "-"}
-      </p>
+  divIda.innerHTML = `
 
-      <p>
-        <b>Instituição:</b>
-        ${usuario ? usuario.instituicao : "-"}
-      </p>
+    <div class="topo">
 
-      <p>
-        <b>Status:</b>
-        ${statusTexto}
-      </p>
+      <div class="nome">
+        ${usuario?.nome || "Aluno"}
+      </div>
 
-      <p>
-        <b>Data:</b>
-        ${p.data_presenca}
-      </p>
+    </div>
 
-      <hr>
-    `;
+    <div class="info">
+      📱 ${usuario?.telefone || "-"}
+    </div>
 
-    lista.appendChild(div);
-  });
+    <div class="info">
+      🎓 ${usuario?.instituicao || "-"}
+    </div>
+
+    <div class="status ${statusIda}">
+      ${nomesIda[statusIda]}
+    </div>
+
+  `;
+
+  listaIda.appendChild(divIda);
+
+  // ================= VOLTA =================
+
+  const statusVolta =
+    p.status_volta || "aguardando_volta";
+
+  const nomesVolta = {
+
+    aguardando_volta:
+      "⏳ Aguardando volta",
+
+    embarcado_volta:
+      "🚌 Embarcou",
+
+    nao_volta:
+      "❌ Não volta",
+
+    cheguei_casa:
+      "🏠 Chegou em casa"
+  };
+
+  const divVolta =
+    document.createElement("div");
+
+  divVolta.className =
+    "card-aluno";
+
+  divVolta.innerHTML = `
+
+    <div class="topo">
+
+      <div class="nome">
+        ${usuario?.nome || "Aluno"}
+      </div>
+
+    </div>
+
+    <div class="info">
+      📱 ${usuario?.telefone || "-"}
+    </div>
+
+    <div class="info">
+      🎓 ${usuario?.instituicao || "-"}
+    </div>
+
+    <div class="status ${statusVolta}">
+      ${nomesVolta[statusVolta]}
+    </div>
+
+  `;
+
+  listaVolta.appendChild(divVolta);
+});
 }
 
 // ================= CANCELAR PRESENÇA =================

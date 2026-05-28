@@ -26,21 +26,35 @@
 
   <h3>Status de retorno</h3>
 
-  <button onclick="atualizarStatus('aguardando')">
-    ⏳ Aguardando ônibus
-  </button>
+<button onclick="atualizarStatusVolta('aguardando_volta')">
+  ⏳ Aguardando ônibus
+</button>
 
-  <button onclick="atualizarStatus('embarcado')">
-    🚌 Já embarquei
-  </button>
+<button onclick="atualizarStatusVolta('embarcado_volta')">
+  🚌 Já embarquei
+</button>
 
-  <button onclick="naoVouVoltar()">
+<button onclick="atualizarStatusVolta('nao_volta')">
   ❌ Não volto hoje
-  </button>
+</button>
 
-  <button onclick="atualizarStatus('cheguei')">
-    🏠 Já cheguei em casa
-  </button>
+<button onclick="atualizarStatusVolta('cheguei_casa')">
+  🏠 Já cheguei em casa
+</button>
+
+<h3>Status da ida</h3>
+
+<button onclick="atualizarStatusIda('aguardando_ida')">
+  ⏳ Aguardando ida
+</button>
+
+<button onclick="atualizarStatusIda('embarcou_ida')">
+  🚌 Embarquei
+</button>
+
+<button onclick="atualizarStatusIda('chegou_faculdade')">
+  🏫 Cheguei na faculdade
+</button>
 
   <p id="statusAtual"></p>
 
