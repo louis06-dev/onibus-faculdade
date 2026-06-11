@@ -30,9 +30,15 @@ content="width=device-width, initial-scale=1.0">
 
   <h2>🏠 Painel da Volta</h2>
 
-  <div id="listaVolta">
-    Carregando...
-  </div>
+<div id="resumoVolta"></div>
+
+<hr>
+
+<div id="listaVolta">
+  Carregando...
+</div>
+
+<hr>
 
   <br>
     <br>
@@ -42,6 +48,12 @@ content="width=device-width, initial-scale=1.0">
     🏠 Ver painel da ida
   </button>
 
+</a>
+
+<a href="motorista-historico.html">
+  <button>
+    📜 Histórico
+  </button>
 </a>
 
 <br><br>
@@ -76,13 +88,17 @@ async function carregarVolta(){
   lista.innerHTML = "Carregando...";
 
   // buscar presenças
-  const { data: presencas, error } =
-    await supabaseClient
-      .from("presencas")
-      .select("*")
-      .order("created_at", {
-        ascending:false
-      });
+  const hoje =
+  new Date().toISOString().split("T")[0];
+
+const { data: presencas, error } =
+  await supabaseClient
+    .from("presencas")
+    .select("*")
+    .eq("data_presenca", hoje)
+    .order("created_at", {
+      ascending:false
+    });
 
   if(error){
 
@@ -180,6 +196,33 @@ async function carregarVolta(){
     lista.appendChild(div);
 
   });
+
+  const aguardando =
+  presencas.filter(p =>
+    p.status_volta === "aguardando_volta"
+  ).length;
+
+const embarcou =
+  presencas.filter(p =>
+    p.status_volta === "embarcado_volta"
+  ).length;
+
+const naoVolta =
+  presencas.filter(p =>
+    p.status_volta === "nao_volta"
+  ).length;
+
+const chegou =
+  presencas.filter(p =>
+    p.status_volta === "cheguei_casa"
+  ).length;
+
+document.getElementById("resumoVolta").innerHTML = `
+  <p>⏳ Aguardando: <b>${aguardando}</b></p>
+  <p>🚌 Embarcou: <b>${embarcou}</b></p>
+  <p>❌ Não volta: <b>${naoVolta}</b></p>
+  <p>🏠 Chegou: <b>${chegou}</b></p>
+`;
 
 }
 

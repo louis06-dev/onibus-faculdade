@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0">
+
+<title>Histórico de Presenças</title>
+
+<link rel="stylesheet" href="estilo.css">
+
+<style>
+
+.card-aluno{
+  border:1px solid #ddd;
+  border-radius:10px;
+  padding:15px;
+  margin-bottom:15px;
+}
+
+.data{
+  font-size:18px;
+  font-weight:bold;
+  margin-bottom:10px;
+  color:#ffffff;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+  <h2>📜 Histórico de Presenças</h2>
+
+  <div id="listaHistorico">
+    Carregando...
+  </div>
+
+  <br>
+
+  <a href="motorista-ida.html">
+    <button>
+      🚍 Painel Ida
+    </button>
+  </a>
+
+  <a href="motorista-volta.html">
+    <button>
+      🏠 Painel Volta
+    </button>
+  </a>
+
+  <br><br>
+
+  <button onclick="logout()">
+    Sair
+  </button>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script src="auth.js"></script>
+
+<script>
+
+async function carregarHistoricoMotorista(){
+
+  const { data: sessionData } =
+    await supabaseClient.auth.getSession();
+
+  if(!sessionData.session){
+
+    window.location.href = "login.html";
+
+    return;
+  }
+
+  const lista =
+    document.getElementById("listaHistorico");
+
+  lista.innerHTML = "Carregando...";
+
+  const { data: presencas, error } =
+    await supabaseClient
+      .from("presencas")
+      .select("*")
+      .order("data_presenca", {
+        ascending:false
+      });
+
+  if(error){
+
+    lista.innerHTML =
+      "Erro ao carregar histórico";
+
+    console.log(error);
+
+    return;
+  }
+
+  const { data: usuarios } =
+    await supabaseClient
+      .from("usuarios")
+      .select("*");
+
+  if(!presencas || presencas.length === 0){
+
+    lista.innerHTML =
+      "<p>Nenhuma presença encontrada.</p>";
+
+    return;
+  }
+
+  const nomesIda = {
+
+    aguardando_ida:
+      "⏳ Aguardando ida",
+
+    embarcou_ida:
+      "🚌 Embarcou",
+
+    chegou_faculdade:
+      "🏫 Chegou na faculdade"
+  };
+
+  const nomesVolta = {
+
+    aguardando_volta:
+      "⏳ Aguardando volta",
+
+    embarcado_volta:
+      "🚌 Embarcou na volta",
+
+    nao_volta:
+      "❌ Não volta",
+
+    cheguei_casa:
+      "🏠 Chegou em casa"
+  };
+
+  lista.innerHTML = "";
+
+  presencas.forEach(p => {
+
+    const usuario =
+      usuarios.find(u =>
+        u.id === p.user_id
+      );
+
+    const div =
+      document.createElement("div");
+
+    div.className =
+      "card-aluno";
+
+    div.innerHTML = `
+
+      <div class="data">
+        📅 ${p.data_presenca}
+      </div>
+
+      <p>
+        👤 <b>${usuario?.nome || "Aluno"}</b>
+      </p>
+
+      <p>
+        🏫 ${usuario?.instituicao || "-"}
+      </p>
+
+      <p>
+        ☎️
+        <a
+          href="https://wa.me/55${usuario?.telefone}"
+          target="_blank"
+        >
+          ${usuario?.telefone || "-"}
+        </a>
+      </p>
+
+      <hr>
+
+      <p>
+  ${
+    p.status_volta === "nao_volta"
+      ? "⚠️ Ida"
+      : "✅ Ida e volta"
+  }
+</p>
+
+    `;
+
+    lista.appendChild(div);
+
+  });
+
+}
+
+carregarHistoricoMotorista();
+
+setInterval(
+  carregarHistoricoMotorista,
+  60000
+);
+
+</script>
+
+</body>
+</html>

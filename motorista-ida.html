@@ -30,9 +30,13 @@ content="width=device-width, initial-scale=1.0">
 
   <h2>🚍 Painel da Ida</h2>
 
-  <div id="listaIda">
-    Carregando...
-  </div>
+<div id="resumoIda"></div>
+
+<hr>
+
+<div id="listaIda">
+  Carregando...
+</div>
 
   <br>
   <a href="motorista-volta.html">
@@ -40,6 +44,12 @@ content="width=device-width, initial-scale=1.0">
   <button>
     🏠 Ver painel da volta
   </button>
+  
+  <a href="motorista-historico.html">
+  <button>
+    📜 Histórico
+  </button>
+</a>
 
 </a>
 
@@ -75,13 +85,17 @@ async function carregarIda(){
   lista.innerHTML = "Carregando...";
 
   // buscar presenças
-  const { data: presencas, error } =
-    await supabaseClient
-      .from("presencas")
-      .select("*")
-      .order("created_at", {
-        ascending:false
-      });
+  const hoje =
+  new Date().toISOString().split("T")[0];
+
+const { data: presencas, error } =
+  await supabaseClient
+    .from("presencas")
+    .select("*")
+    .eq("data_presenca", hoje)
+    .order("created_at", {
+      ascending:false
+    });
 
   if(error){
 
@@ -177,6 +191,27 @@ async function carregarIda(){
     lista.appendChild(div);
 
   });
+
+  const aguardando =
+  presencas.filter(p =>
+    p.status_ida === "aguardando_ida"
+  ).length;
+
+const embarcou =
+  presencas.filter(p =>
+    p.status_ida === "embarcou_ida"
+  ).length;
+
+const chegou =
+  presencas.filter(p =>
+    p.status_ida === "chegou_faculdade"
+  ).length;
+
+document.getElementById("resumoIda").innerHTML = `
+  <p>⏳ Aguardando: <b>${aguardando}</b></p>
+  <p>🚌 Embarcou: <b>${embarcou}</b></p>
+  <p>🏫 Chegou: <b>${chegou}</b></p>
+`;
 
 }
 

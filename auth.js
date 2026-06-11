@@ -270,6 +270,35 @@ async function login(){
     window.location.href = "presenca.html";
   }  
 }  
+function mostrarSenha(){
+
+  const senha =
+    document.getElementById("senha");
+
+  const confirmar =
+    document.getElementById("confirmarSenha");
+
+  const texto =
+    document.getElementById("toggleSenha");
+
+  const visivel =
+    senha.type === "text";
+
+  senha.type =
+    visivel ? "password" : "text";
+
+  if(confirmar){
+    confirmar.type =
+      visivel ? "password" : "text";
+  }
+
+  if(texto){
+    texto.innerHTML =
+      visivel
+        ? "👁 Mostrar senha"
+        : "🙈 Ocultar senha";
+  }
+}
 
 
 // ================= LOGOUT =================
@@ -516,11 +545,19 @@ async function carregarHistorico(){
 
   const userId = data.session.user.id;
 
-  const { data: presencas, error } = await supabaseClient
+ const hoje = new Date()
+  .toISOString()
+  .split("T")[0];
+
+const { data: presencas, error } =
+  await supabaseClient
     .from("presencas")
     .select("id, data_presenca")
     .eq("user_id", userId)
-    .order("data_presenca", { ascending:false });
+    .gte("data_presenca", hoje)
+    .order("data_presenca", {
+      ascending:false
+    });
 
   const lista = document.getElementById("lista");
 
@@ -891,3 +928,5 @@ window.atualizarStatusIda =
 
 window.atualizarStatusVolta =
   atualizarStatusVolta;
+  window.mostrarSenha =
+  mostrarSenha;

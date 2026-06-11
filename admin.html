@@ -135,13 +135,18 @@ async function carregarPresencasAdmin(){
   listaVolta.innerHTML = "Carregando...";
 
   // buscar presenças
-  const { data: presencas, error } =
-    await supabaseClient
-      .from("presencas")
-      .select("*")
-      .order("created_at", {
-        ascending:false
-      });
+  const hoje = new Date()
+  .toISOString()
+  .split("T")[0];
+
+const { data: presencas, error } =
+  await supabaseClient
+    .from("presencas")
+    .select("*")
+    .gte("data_presenca", hoje)
+    .order("data_presenca", {
+      ascending:false
+    });
 
   if(error){
 
